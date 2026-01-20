@@ -6,98 +6,59 @@ from sklearn.linear_model import LinearRegression
 # -----------------------------
 # Function 1: Read TSV file
 # -----------------------------
-#"EOD_master_diagnoses_12022025.tsv"
+# Master dataset.csv
 def read_tsv(fileName):
     initial_df = pd.read_csv(fileName, sep='\t')
     print(initial_df.head())
 
-    #Column names: 
-    #edipi, ssn, date_of_birth, date_of_death, veteran_in_vha, diagnosis_first, diagnosis_last, classification, diagnosis
-    #edipi, ssn, date_of_birth, date_of_death (some in NaN), veteran_in_vha (yes / no), diagnosis_first, diagnosis_last, classification (icd10cm or icd9cm), diagnosis
-
-    #Create a new df that stores the row if the column value of "veteran_in_vha" equals "yes"
-    df = initial_df[initial_df['veteran_in_vha'] == "yes"]
+    #any column name
+    df = initial_df[initial_df['vha'] == "yes"]
     print(df.head())
 
 # Convert dates
-#df['date_of_birth'] = pd.to_datetime(df['date_of_birth'])
-#df['time of diagnosis'] = (df['diagnosis_last'] - df['diagnosis_first']).dt.days / 365.25 
+    df['date_of_birth'] = pd.to_datetime(df['date_of_birth'])
+    df['time of diagnosis'] = (df['diagnosis_last'] - df['diagnosis_first']).dt.days / 365.25 
 # Calculate age at diagnosis
-#df['age_at_diagnosis'] = (df['time of diagnosis'] - df['date_of_birth']).dt.days / 365.25
+    df['age_at_diagnosis'] = (df['time of diagnosis'] - df['date_of_birth']).dt.days / 365.25
 
-# Suicide-related ICD-10 codes of interest
-    suicide_codes = [
-        "R45851",  # Suicidal ideation
-        "T1491",   # Suicide attempt
-        "Z915"     # Personal history of self-harm
-    ]
+    mask = df['diagnosis'].str.startswith(tuple([f"X{i}" for i in range(71, 84)]))
 
-
-    #isin(suicide_codes) → catches exact matches like R45.851, T14.91, Z91.5.
-    #str.startswith(tuple([f"X{i}" for i in range(71, 84)])) → catches all codes in the X71–X83 range (intentional self-harm).
-
-    # Codes that start with X71–X83 (intentional self-harm)
-    mask_self_harm = df['diagnosis'].str.startswith(tuple([f"X{i}" for i in range(71, 84)]))
-
-    # Filter veterans with suicide-related codes
-    df_suicide = df[
-        (df['veteran_in_vha'].str.lower() == "yes") &
+# Create var 
+# var = someething     
+    # Filter 
+    df_outcome = df[
+        (df['vha'].str.lower() == "yes") &
             (
-            df['diagnosis'].isin(suicide_codes) |
-            mask_self_harm
+            df['diagnosis'].isin(var) |
+            mask
         )
     ]
 
-    print(df_suicide.head())
+    print(df_something.head())
 
-# Suicide & Self‑Harm
-#   R45.851 → Suicidal ideation
-#   T14.91 → Suicide attempt
-#   X71–X83 → Intentional self‑harm (various methods)
-#   Z91.5 → Personal history of self‑harm
-
-# Mood Disorders
-#   F32.x → Major depressive disorder, single episode
-#   F33.x → Major depressive disorder, recurrent
-#   F34.x → Persistent mood (affective) disorders (e.g., dysthymia)
-#   F39 → Unspecified mood disorder
-
-# Anxiety & Stress Disorders
-#   F41.x → Anxiety disorders
-#   F43.x → Reaction to severe stress, adjustment disorders (includes PTSD)
-
-# Schizophrenia & Psychotic Disorders
-#   F20.x → Schizophrenia
-#   F21 → Schizotypal disorder
-#   F25.x → Schizoaffective disorders
-
-# Substance Use Disorders
-#   F10–F19 → Mental and behavioral disorders due to psychoactive substance use
-
-# Broader psychiatric code prefixes
-    psychiatric_prefixes = [
-        "F32", "F33", "F34", "F39",  # Mood disorders
-        "F41", "F43",                # Anxiety/stress
-        "F20", "F21", "F25",         # Schizophrenia/psychotic
-        "F10", "F11", "F12", "F13", "F14", "F15", "F16", "F17", "F18", "F19"  # Substance use
+    code_prefixes = [
+        "F32", "F33", "F34", "F39",  
+        "F41", "F43",               
+        "F20", "F21", "F25",         
+        "F10", "F11", "F12", "F13", "F14", "F15", "F16", "F17", "F18", "F19"  
     ]
 
-# Mask for suicide/self-harm
-    mask_suicide = df['diagnosis_code'].isin(suicide_codes) | df['diagnosis_code'].str.startswith(tuple([f"X{i}" for i in range(71, 84)]))
+# Mask
+    mask = df['diagnosis_code'].isin(var_codes) | df['diagnosis_code'].str.startswith(tuple([f"X{i}" for i in range(71, 84)]))
 
 # Mask for psychiatric conditions
     mask_psych = df['diagnosis_code'].str.startswith(tuple(psychiatric_prefixes))
 
-# Combine masks and filter veterans
+# Combine masks and filter people
     df_filtered = df[
-        (df['veteran_in_vha'].str.lower() == "yes") &
-        (mask_suicide | mask_psych)
+        (df['vha'].str.lower() == "yes") &
+        (mask | mask_psych)
     ]
 
     print(df_filtered.head())
 
-    df_filtered.to_csv("veterans_suicide_psych.tsv", sep="\t", index=False)
-    print("Filtered dataset saved as veterans_suicide_psych.tsv")
+    df_filtered.to_csv("people_psych.tsv", sep="\t", index=False)
+    print("Filtered dataset saved as people_psych.tsv")
 
     return df_filtered
 
@@ -107,7 +68,7 @@ def read_tsv(fileName):
 
 def plot_veterans_by_category(df):
     """
-    Create a bar chart showing the number of veterans by psychiatric diagnosis category.
+    Create a bar chart showing the number of people by diagnosis category.
     
     Parameters:
         df (pd.DataFrame): DataFrame with at least a 'diagnosis_code' column.
@@ -116,13 +77,13 @@ def plot_veterans_by_category(df):
     # Categorization function
     def categorize_code(code):
         if code in ["R45.851", "T14.91", "Z91.5"] or code.startswith(tuple([f"X{i}" for i in range(71, 84)])):
-            return "Suicide/Self-harm"
+            return "Diagnosis: Name of R45 - Z91"
         elif code.startswith(("F32", "F33", "F34", "F39")):
-            return "Mood disorders"
+            return "Diagnosis: Name of F"
         elif code.startswith(("F41", "F43")):
-            return "Anxiety/Stress disorders"
+            return "Diagnosis: Anxiety"
         elif code.startswith(("F20", "F21", "F25")):
-            return "Schizophrenia/Psychotic disorders"
+            return "Diagnosis: P/S disorders"
         elif code.startswith(tuple([f"F{i}" for i in range(10, 20)])):
             return "Substance use disorders"
         else:
@@ -261,4 +222,5 @@ coefficients = pd.DataFrame({
     "Feature": X.columns,
     "Coefficient": model.coef_
 })
+
 print(coefficients)
