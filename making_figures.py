@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load patient data with descriptions
-filename = "EOD_Master_ICD_descriptions.tsv"
+filename = " " #Insert file path.
 patients = pd.read_csv(filename, sep="\t")
 
 # Count frequency of each code
@@ -131,3 +131,4 @@ plt.ylabel("Number of Patients")
 plt.xticks(rotation=75)
 plt.tight_layout()
 plt.show(block=False)
+
