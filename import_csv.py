@@ -30,7 +30,8 @@ def count_unique_values_in_column(file_path, column_name, output_file):
 
 if __name__ == "__main__":
     print("Script started")
-    file_path = "EOD_cdw_tmds_diagnoses_summary_11292025.tsv"
+    file_path = " " //Enter path file
     column_name = "diagnosis"
     output_file = "diagnosis_counts.csv"
     count_unique_values_in_column(file_path, column_name, output_file)
+
